@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="משמרות">
+<title>משמרות וכלבים</title>
+<link rel="icon" id="favicon" href="data:,">
+<link rel="apple-touch-icon" id="touchIcon" href="data:,">
+<style>
+:root{
+  --bg:#000; --card:#1c1c1e; --card2:#2c2c2e; --line:rgba(255,255,255,.08);
+  --text:#f5f5f7; --muted:#9a9aa3; --accent:#0a84ff; --green:#30d158; --orange:#ff9f0a; --red:#ff453a;
+  --radius:18px; --nav-h:56px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html{color-scheme:dark}
+html,body{margin:0;min-height:100%;background:#000;color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","Heebo","Assistant",Arial,sans-serif;
+  -webkit-text-size-adjust:100%}
+body{background:
+  radial-gradient(1000px 520px at 85% -8%,rgba(10,132,255,.13),transparent 60%),
+  radial-gradient(800px 480px at 0% 0%,rgba(191,90,242,.08),transparent 60%),#000;
+  background-attachment:fixed}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.app{max-width:720px;margin:0 auto;
+  padding:calc(env(safe-area-inset-top) + 14px) 16px calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px)}
+.app>*{animation:fade .25s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* headers */
+.top{margin:6px 2px 16px}
+.top h1{margin:0;font-size:30px;font-weight:700;letter-spacing:-.3px}
+.top p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.sec{margin:22px 6px 8px;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.2px}
+.note{margin:8px 8px 0;color:var(--muted);font-size:12.5px;line-height:1.5}
+
+/* calendar */
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 14px}
+.mtitle{text-align:center;flex:1;min-width:0}
+.mtitle h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.3px}
+.mtitle h1 span{color:var(--muted);font-weight:500}
+.link{background:none;border:0;color:var(--accent);font-size:13px;padding:2px 6px}
+.ic{width:42px;height:42px;border-radius:50%;border:0;background:var(--card);display:grid;place-items:center;color:var(--text);flex:none}
+.ic:active{background:var(--card2)}
+.ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:34px;height:34px;background:var(--card2)}
+.ic.sm svg{width:16px;height:16px}
+
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 4px;text-align:center;min-width:0}
+.chip b{display:block;font-size:17px;font-weight:700;white-space:nowrap}
+.chip span.l{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.chip b.net{font-size:15px;color:var(--green)}
+.stat small{white-space:nowrap}
+
+.dow,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dow{margin-bottom:6px}
+.dow span{text-align:center;font-size:12px;color:var(--muted);font-weight:600}
+.dow span:nth-child(n+6){color:#6f6f7a}
+.day{appearance:none;border:1px solid transparent;border-radius:14px;background:var(--card);
+  aspect-ratio:1/1.1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  padding:6px 1px 5px;position:relative;min-width:0;transition:transform .12s,background .15s}
+.day:active{transform:scale(.95)}
+.day.empty{background:none;border:0;pointer-events:none}
+.day .num{font-size:15px;font-weight:600;min-width:26px;height:26px;line-height:26px;border-radius:50%;text-align:center}
+.day .meta{display:flex;align-items:center;justify-content:center;gap:2px;min-height:15px;font-size:10px;white-space:nowrap}
+.day .meta b{color:var(--green);font-weight:700;font-size:10.5px}
+.day .meta em{font-style:normal;font-size:12px;line-height:1}
+.day.weekend{background:#141416}
+.day.weekend .num{color:#8e8e99}
+.day.worked{background:linear-gradient(180deg,rgba(48,209,88,.24),rgba(48,209,88,.09));border-color:rgba(48,209,88,.45)}
+.day.worked .num{color:#fff}
+.day.dogs:not(.worked){background:linear-gradient(180deg,rgba(255,159,10,.20),rgba(255,159,10,.07));border-color:rgba(255,159,10,.40)}
+.day.today .num{background:var(--accent);color:#fff}
+.day:focus-visible,.btn:focus-visible,nav button:focus-visible,.ic:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(min-width:600px){
+  .day{aspect-ratio:1/.82;padding:8px 2px 7px}
+  .day .num{font-size:17px}
+  .day .meta b{font-size:13px}
+  .day .meta em{font-size:16px}
+}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin:14px 0 0;color:var(--muted);font-size:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg{width:12px;height:12px;border-radius:4px;display:inline-block}
+.lg.w{background:rgba(48,209,88,.55);border:1px solid rgba(48,209,88,.8)}
+.lg.t{background:var(--accent);border-radius:50%}
+.banner{display:block;width:100%;text-align:start;margin-bottom:14px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,159,10,.4);
+  background:rgba(255,159,10,.10);color:#ffd9a0;font-size:13.5px;line-height:1.5}
+
+/* cards / rows */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:2px 16px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:6px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.lbl{display:flex;flex-direction:column;gap:1px}
+.lbl small{color:var(--muted);font-size:12px}
+.val{display:flex;align-items:center;gap:8px;direction:ltr}
+.suf{color:var(--muted);font-size:14px;min-width:20px}
+.inp{background:var(--card2);border:1px solid transparent;border-radius:10px;padding:8px 10px;min-height:38px;width:104px;text-align:left;direction:ltr;outline:0}
+.inp:focus{border-color:var(--accent)}
+select.inp{width:auto;max-width:100%;direction:rtl;text-align:start}
+.inp.wide{width:100%;direction:rtl;text-align:start}
+input[type=time].inp{width:148px;padding-inline:8px}
+.seg{display:flex;width:100%;background:var(--card2);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;border-radius:9px;padding:8px 6px;color:var(--muted);font-size:14px;font-weight:600}
+.seg button.on{background:#636366;color:#fff}
+.sw{position:relative;width:51px;height:31px;flex:none}
+.sw input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer;z-index:2}
+.sw i{position:absolute;inset:0;background:#3a3a3e;border-radius:99px;transition:background .2s}
+.sw i::after{content:"";position:absolute;top:2px;right:2px;width:27px;height:27px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 2px 5px rgba(0,0,0,.35)}
+.sw input:checked+i{background:var(--green)}
+.sw.or input:checked+i{background:var(--orange)}
+.sw input:checked+i::after{transform:translateX(-20px)}
+.sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+
+.btn{appearance:none;border:0;border-radius:14px;padding:14px 18px;background:var(--accent);color:#fff;font-weight:700;font-size:16px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px}
+.btn:active{filter:brightness(.88)}
+.btn.block{width:100%}
+.btn.ghost{background:var(--card2);color:var(--text)}
+.btn.danger{color:var(--red)}
+.btn.wa{background:#25d366;color:#04230f}
+.btn.small{min-height:42px;padding:10px 14px;font-size:14px}
+.stack{display:grid;gap:10px}
+.stack .btn{width:100%}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* export */
+.sel2{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;padding:10px 0}
+.sel2 select{width:100%;min-height:44px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 0 6px}
+.stat{background:var(--card2);border-radius:14px;padding:12px 6px;text-align:center}
+.stat b{display:block;font-size:22px;font-weight:700}
+.stat span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.stat small{display:block;font-size:11px;color:var(--muted)}
+.ln{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+.ln:last-child{border-bottom:0}
+.ln span small{color:var(--muted);font-size:12px;margin-inline-start:6px}
+.ln.total{font-weight:700}
+.ln.neg b{color:#ff8a80}
+.ln.net{font-size:19px;font-weight:800;padding:14px 0}
+.ln.net b{color:var(--green)}
+.n{direction:ltr;unicode-bidi:isolate;display:inline-block}
+details{margin-top:14px}
+summary{color:var(--muted);font-size:13.5px;padding:6px 4px;cursor:pointer}
+textarea.prev{width:100%;min-height:230px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;color:var(--text);
+  line-height:1.55;font-size:13.5px;direction:rtl;resize:vertical;outline:0}
+.hist{font-size:12.5px;color:var(--muted);line-height:1.8;padding:4px 4px 0}
+
+/* bottom nav */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(18,18,20,.82);
+  -webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav .in{max-width:720px;margin:0 auto;display:flex}
+nav button{flex:1;height:var(--nav-h);background:none;border:0;color:var(--muted);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;transition:color .15s}
+nav button.on{color:var(--accent)}
+nav svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* day sheet */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;transition:opacity .22s;z-index:40}
+.backdrop.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;background:#1c1c1e;border-radius:26px 26px 0 0;
+  padding:8px 18px calc(18px + env(safe-area-inset-bottom));z-index:41;max-height:92vh;overflow:auto;outline:0;
+  transform:translateY(105%);visibility:hidden;transition:transform .3s cubic-bezier(.2,.8,.2,1),visibility 0s linear .3s;
+  border:1px solid var(--line);border-bottom:0}
+.sheet.open{transform:none;visibility:visible;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.grab{width:38px;height:5px;border-radius:9px;background:#48484c;margin:4px auto 10px}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.sh-head h2{margin:0;font-size:22px;font-weight:700}
+.sh-head .sub{color:var(--muted);font-size:14px;margin-top:2px}
+.sheet .card{background:var(--card2);border:0}
+.sheet .inp{background:#3a3a3e}
+.workbox{border-bottom:1px solid var(--line)}
+.calc{font-size:14px;color:#bfeccb;justify-content:flex-start;min-height:44px;line-height:1.5}
+.calc.warn{color:#ffd9a0}
+.actions{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;margin-top:14px}
+@media(min-width:700px){
+  .sheet{bottom:auto;top:50%;border-radius:26px;border-bottom:1px solid var(--line);transform:translateY(-46%) scale(.97);opacity:0;
+    transition:transform .25s,opacity .2s,visibility 0s linear .25s}
+  .sheet.open{transform:translateY(-50%);opacity:1;transition:transform .25s,opacity .2s}
+  .grab{display:none}
+}
+#toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px);transform:translate(-50%,12px);
+  background:rgba(58,58,62,.96);color:#fff;padding:11px 18px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;
+  transition:.25s;z-index:60;max-width:calc(100% - 32px);text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<noscript><p style="padding:24px">האפליקציה דורשת JavaScript.</p></noscript>
+<main class="app" id="view"></main>
+
+<nav aria-label="ניווט ראשי"><div class="in">
+  <button data-view="cal" class="on" aria-current="page">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16.5" rx="3.5"/><path d="M3 9.5h18M8 3v3.5M16 3v3.5"/></svg><span>לוח שנה</span></button>
+  <button data-view="settings" aria-current="false">
+    <svg viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h2M11 17h9"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="8.5" cy="17" r="2.3"/></svg><span>הגדרות</span></button>
+  <button data-view="export" aria-current="false">
+    <svg viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 15.5v2a3 3 0 003 3h8a3 3 0 003-3v-2"/></svg><span>ייצוא דוח</span></button>
+</div></nav>
+
+<div class="backdrop" id="bd"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle" tabindex="-1">
+  <div class="grab"></div>
+  <div class="sh-head">
+    <div><h2 id="shTitle"></h2><div class="sub" id="shDate"></div></div>
+    <button class="ic sm" id="shX" aria-label="סגור"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="card">
+    <label class="row"><span class="lbl"><b>עבדתי</b><small>לפי המשמרת הקבועה</small></span>
+      <span class="sw"><input type="checkbox" id="swWork"><i></i></span></label>
+    <div id="workBox" class="workbox" hidden>
+      <div class="row"><span>התחלה</span><input type="time" class="inp" id="wStart"></div>
+      <div class="row"><span>סיום</span><input type="time" class="inp" id="wEnd"></div>
+      <div class="row"><span>הפסקה</span><div class="val"><input type="number" class="inp" id="wBrk" inputmode="numeric" min="0" max="600" step="5"><span class="suf">דק׳</span></div></div>
+      <div class="row calc" id="wCalc"></div>
+    </div>
+    <label class="row"><span class="lbl"><b>הכלבים אצלי 🐾</b><small id="dogHint"></small></span>
+      <span class="sw or"><input type="checkbox" id="swDogs"><i></i></span></label>
+    <div class="row"><input class="inp wide" id="note" placeholder="הערה (לא חובה)" maxlength="120" autocomplete="off"></div>
+  </div>
+  <div class="actions">
+    <button class="btn ghost danger" id="shClear">נקה יום</button>
+    <button class="btn" id="shDone">סיום</button>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ======================= LOGIC (pure, no DOM) ======================= */
+//<logic>
+const MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const DOW_SHORT=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+const DOW_FULL=['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','יום שבת'];
+const TIME_RE=/^\d{2}:\d{2}$/, DATE_RE=/^\d{4}-\d{2}-\d{2}$/;
+
+const pad=n=>String(n).padStart(2,'0');
+const keyOf=(y,m,d)=>y+'-'+pad(m+1)+'-'+pad(d);
+const daysIn=(y,m)=>new Date(y,m+1,0).getDate();
+const num=(v,def=0)=>{const n=parseFloat(v);return Number.isFinite(n)?n:def};
+const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
+const r2=n=>Math.round((n+Number.EPSILON)*100)/100;
+const toMin=t=>{const p=String(t||'').split(':');return (parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0)};
+const fmtHM=min=>Math.floor(min/60)+':'+pad(Math.round(min%60));
+const money=n=>{const v=r2(n);return v.toLocaleString('he-IL',{minimumFractionDigits:(v%1?2:0),maximumFractionDigits:2})+' ₪'};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const defaultState=()=>({
+  v:1,setupDone:false,
+  settings:{start:'08:00',end:'16:00',brk:0,
+    tax:{pct:0,points:0,pointVal:242,dogs:false,travel:false}},
+  rates:[{from:'0000-00-00',mode:'hourly',hourly:0,flat:0,dog:60,travel:0}],
+  days:{}
+});
+
+function normalize(s){
+  const o=defaultState(); if(!s||typeof s!=='object') return o;
+  const st=s.settings||{}, D=o.settings.tax, tx=st.tax||{};
+  if(TIME_RE.test(st.start)) o.settings.start=st.start;
+  if(TIME_RE.test(st.end)) o.settings.end=st.end;
+  o.settings.brk=clamp(num(st.brk),0,600);
+  D.pct=clamp(num(tx.pct,D.pct),0,100); D.points=clamp(num(tx.points,D.points),0,30);
+  D.pointVal=Math.max(0,num(tx.pointVal,D.pointVal)); D.dogs=!!tx.dogs; D.travel=!!tx.travel;
+  if(Array.isArray(s.rates)){
+    const rs=s.rates.filter(r=>r&&DATE_RE.test(r.from)).map(r=>({from:r.from,mode:r.mode==='flat'?'flat':'hourly',
+      hourly:Math.max(0,num(r.hourly)),flat:Math.max(0,num(r.flat)),dog:Math.max(0,num(r.dog,60)),travel:Math.max(0,num(r.travel))}))
+      .sort((a,b)=>a.from<b.from?-1:a.from>b.from?1:0);
+    if(rs.length) o.rates=rs;
+  }
+  if(s.days&&typeof s.days==='object'){
+    for(const k of Object.keys(s.days)){
+      if(!DATE_RE.test(k)) continue;
+      const d=s.days[k]||{}, e={};
+      if(d.work&&TIME_RE.test(d.work.s)&&TIME_RE.test(d.work.e)) e.work={s:d.work.s,e:d.work.e,b:clamp(num(d.work.b),0,600)};
+      if(d.dogs) e.dogs=true;
+      if(typeof d.note==='string'&&d.note.trim()) e.note=d.note.slice(0,120);
+      if(e.work||e.dogs||e.note) o.days[k]=e;
+    }
+  }
+  o.setupDone=!!s.setupDone;
+  return o;
+}
+
+function shiftMinutes(w){
+  if(!w) return 0;
+  let d=toMin(w.e)-toMin(w.s); if(d<0) d+=1440;      // משמרת לילה חוצה חצות
+  return Math.max(0,d-(+w.b||0));
+}
+function rateFor(rates,key){
+  let r=rates[0];
+  for(const x of rates){ if(x.from<=key) r=x; else break; }
+  return r;
+}
+function dayCalc(st,key){
+  const d=st.days[key]||{}, r=rateFor(st.rates,key);
+  const o={worked:!!d.work,dogs:!!d.dogs,min:0,work:0,dog:0,travel:0};
+  if(d.work){
+    o.min=shiftMinutes(d.work);
+    o.work=r.mode==='flat'?(+r.flat||0):(o.min/60)*(+r.hourly||0);
+    o.travel=+r.travel||0;
+  }
+  if(d.dogs) o.dog=+r.dog||0;
+  return o;
+}
+function summarize(st,y,m){
+  const n=daysIn(y,m), rows=[], t={workDays:0,minutes:0,workPay:0,dogDays:0,dogPay:0,travel:0};
+  for(let d=1;d<=n;d++){
+    const key=keyOf(y,m,d), c=dayCalc(st,key), dt=st.days[key]||{};
+    rows.push({d,key,dow:new Date(y,m,d).getDay(),c,work:dt.work||null,dogs:!!dt.dogs,note:dt.note||''});
+    if(c.worked){t.workDays++;t.minutes+=c.min;t.workPay+=c.work;t.travel+=c.travel}
+    if(c.dogs){t.dogDays++;t.dogPay+=c.dog}
+  }
+  const tx=st.settings.tax;
+  t.workPay=r2(t.workPay); t.dogPay=r2(t.dogPay); t.travel=r2(t.travel);
+  t.gross=r2(t.workPay+t.dogPay+t.travel);
+  const base=t.workPay+(tx.dogs?t.dogPay:0)+(tx.travel?t.travel:0);
+  t.deduction=r2(Math.min(base,Math.max(0,base*(tx.pct/100)-tx.points*tx.pointVal)));
+  t.net=r2(t.gross-t.deduction);
+  return {rows,t};
+}
+const sameRate=(a,b)=>a.mode===b.mode&&a.hourly===b.hourly&&a.flat===b.flat&&a.dog===b.dog&&a.travel===b.travel;
+function applyRates(st,rate,scope,todayKey){
+  const from=scope==='all'?'0000-00-00':scope==='today'?todayKey:todayKey.slice(0,8)+'01';
+  if(scope==='all') st.rates=[Object.assign({from},rate)];
+  else { st.rates=st.rates.filter(r=>r.from<from); st.rates.push(Object.assign({from},rate)); }
+  const out=[];
+  for(const r of st.rates){ const p=out[out.length-1]; if(p&&sameRate(p,r)) continue; out.push(r); }
+  st.rates=out;
+}
+
+function buildWhatsApp(st,y,m,o){
+  const {rows,t}=summarize(st,y,m), L=[];
+  L.push('*דוח שעות – '+MONTHS[m]+' '+y+'*','');
+  rows.forEach(r=>{
+    if(o.onlyActive&&!r.work&&!r.dogs&&!r.note) return;
+    let s=DOW_SHORT[r.dow]+' '+pad(r.d)+'/'+pad(m+1)+' – ';
+    s+=r.work?'✅ עבדתי '+r.work.s+'–'+r.work.e+' ('+fmtHM(r.c.min)+' ש׳)':'❌ לא עבדתי';
+    s+=' | 🐕 כלבים: '+(r.dogs?'כן':'לא');
+    if(r.note) s+=' | 📝 '+r.note;
+    L.push(s);
+  });
+  L.push('','*סיכום*','ימי עבודה: '+t.workDays,'סה״כ שעות: '+fmtHM(t.minutes)+' ('+r2(t.minutes/60)+')','ימי כלבים: '+t.dogDays);
+  if(o.money){
+    L.push('','שכר עבודה: '+money(t.workPay),'בונוס כלבים: '+money(t.dogPay),'נסיעות: '+money(t.travel),
+      '*ברוטו: '+money(t.gross)+'*');
+    if(t.deduction>0) L.push('ניכויים (משוער): '+money(t.deduction));
+    L.push('*נטו משוער: '+money(t.net)+'*');
+  }
+  return L.join('\n');
+}
+
+function buildCSV(st,y,m){
+  const {rows,t}=summarize(st,y,m);
+  const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const safe=s=>/^[=+\-@\t\r]/.test(s)?"'"+s:s;
+  const head=['תאריך','יום','עבדתי','התחלה','סיום','הפסקה (דק׳)','שעות','שכר עבודה','כלבים אצלי','בונוס כלבים','נסיעות','סה״כ ליום','הערה'];
+  const lines=[head];
+  rows.forEach(r=>{
+    lines.push([pad(r.d)+'/'+pad(m+1)+'/'+y,DOW_FULL[r.dow],r.work?'כן':'לא',r.work?r.work.s:'',r.work?r.work.e:'',
+      r.work?r.work.b:'',r.work?r2(r.c.min/60):'',r2(r.c.work),r.dogs?'כן':'לא',r2(r.c.dog),r2(r.c.travel),
+      r2(r.c.work+r.c.dog+r.c.travel),safe(r.note)]);
+  });
+  const blank=Array(13).fill('');
+  lines.push(blank);
+  lines.push(['סה״כ','',t.workDays,'','','',r2(t.minutes/60),t.workPay,t.dogDays,t.dogPay,t.travel,t.gross,'']);
+  lines.push(['ניכויים (משוער)',...Array(10).fill(''),t.deduction,'']);
+  lines.push(['נטו משוער',...Array(10).fill(''),t.net,'']);
+  return '\ufeff'+lines.map(l=>l.map(cell).join(',')).join('\r\n');
+}
+//</logic>
+
+/* ======================= STATE ======================= */
+const KEY='shiftTracker.v1';
+let storageWarned=false;
+function load(){
+  try{ const raw=localStorage.getItem(KEY); return raw?normalize(JSON.parse(raw)):defaultState(); }
+  catch(e){ return defaultState(); }
+}
+function persist(){
+  try{ localStorage.setItem(KEY,JSON.stringify(state)); }
+  catch(e){ if(!storageWarned){storageWarned=true;toast('לא ניתן לשמור בדפדפן (מצב גלישה פרטית?)')} }
+}
+let state=load();
+const nowD=new Date();
+const UI={view:'cal',vy:nowD.getFullYear(),vm:nowD.getMonth(),ey:nowD.getFullYear(),em:nowD.getMonth(),
+  sk:null,mode:'hourly',exp:{onlyActive:false,money:true}};
+const $=id=>document.getElementById(id);
+const view=$('view');
+const todayParts=()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth(),d:d.getDate()}};
+const todayKey=()=>{const t=todayParts();return keyOf(t.y,t.m,t.d)};
+const N=s=>'<span class="n">'+esc(s)+'</span>';
+const setVal=(el,v)=>{ if(document.activeElement!==el) el.value=v; };
+
+let toastT;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+const I={
+  chR:'<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  chL:'<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>'
+};
+
+/* ======================= CALENDAR VIEW ======================= */
+function renderCalendar(){
+  const y=UI.vy,m=UI.vm,n=daysIn(y,m),first=new Date(y,m,1).getDay();
+  const tp=todayParts(), isCur=(y===tp.y&&m===tp.m);
+  const {t}=summarize(state,y,m);
+  let h='<div class="mhead">'+
+    '<button class="ic" data-act="prev" aria-label="חודש קודם">'+I.chR+'</button>'+
+    '<div class="mtitle"><h1>'+MONTHS[m]+' <span>'+y+'</span></h1>'+(isCur?'':'<button class="link" data-act="today">חזרה להיום</button>')+'</div>'+
+    '<button class="ic" data-act="next" aria-label="חודש הבא">'+I.chL+'</button></div>';
+
+  if(!state.setupDone) h+='<button class="banner" data-go="settings">👋 כדי שהשכר יחושב – הגדירו שכר, שעות משמרת ונסיעות במסך ההגדרות. לחצו כאן.</button>';
+
+  h+='<div class="chips">'+
+    '<div class="chip"><b>'+t.workDays+'</b><span class="l">ימי עבודה</span></div>'+
+    '<div class="chip"><b>'+fmtHM(t.minutes)+'</b><span class="l">שעות</span></div>'+
+    '<div class="chip"><b>'+t.dogDays+'</b><span class="l">ימי כלבים</span></div>'+
+    '<div class="chip"><b class="net">'+N(Math.round(t.net).toLocaleString('he-IL')+' ₪')+'</b><span class="l">נטו משוער</span></div></div>';
+
+  h+='<div class="dow">'+DOW_SHORT.map(s=>'<span>'+s+'</span>').join('')+'</div><div class="grid">';
+  for(let i=0;i<first;i++) h+='<div class="day empty"></div>';
+  for(let d=1;d<=n;d++){
+    const key=keyOf(y,m,d), dt=state.days[key]||{}, dow=(first+d-1)%7;
+    const min=shiftMinutes(dt.work);
+    const cls='day'+(dow>=5?' weekend':'')+(dt.work?' worked':'')+(dt.dogs?' dogs':'')+(isCur&&d===tp.d?' today':'');
+    const label=DOW_FULL[dow]+' '+d+' ב'+MONTHS[m]+(dt.work?', עבדתי':'')+(dt.dogs?', הכלבים אצלי':'');
+    h+='<button class="'+cls+'" data-key="'+key+'" aria-label="'+label+'"><span class="num">'+d+'</span>'+
+      '<span class="meta">'+(dt.work?'<b>'+fmtHM(min)+'</b>':'')+(dt.dogs?'<em>🐾</em>':'')+'</span></button>';
+  }
+  h+='</div><div class="legend"><span><i class="lg w"></i>עבדתי</span><span>🐾 הכלבים אצלי</span><span><i class="lg t"></i>היום</span></div>';
+  view.innerHTML=h;
+}
+function shiftMonth(delta){
+  let m=UI.vm+delta,y=UI.vy;
+  if(m<0){m=11;y--}else if(m>11){m=0;y++}
+  UI.vm=m;UI.vy=y;renderCalendar();
+}
+
+/* ======================= DAY SHEET ======================= */
+const sheet=$('sheet'), bd=$('bd');
+function openSheet(key){
+  UI.sk=key; syncSheet();
+  bd.classList.add('open'); sheet.classList.add('open');
+  document.documentElement.style.overflow='hidden';
+  setTimeout(()=>sheet.focus({preventScroll:true}),30);
+}
+function closeSheet(){
+  if(!UI.sk&&!sheet.classList.contains('open')) return;
+  UI.sk=null; bd.classList.remove('open'); sheet.classList.remove('open');
+  document.documentElement.style.overflow='';
+}
+function dayRef(){ return state.days[UI.sk]||(state.days[UI.sk]={}); }
+function commitDay(){
+  const k=UI.sk, dt=state.days[k];
+  if(dt&&!dt.work&&!dt.dogs&&!dt.note) delete state.days[k];
+  persist();
+  if(UI.view==='cal') renderCalendar();
+  syncSheet();
+}
+function syncSheet(){
+  const key=UI.sk; if(!key) return;
+  const dt=state.days[key]||{}, p=key.split('-').map(Number), dateObj=new Date(p[0],p[1]-1,p[2]);
+  $('shTitle').textContent=DOW_FULL[dateObj.getDay()];
+  $('shDate').textContent=p[2]+' ב'+MONTHS[p[1]-1]+' '+p[0];
+  $('swWork').checked=!!dt.work; $('workBox').hidden=!dt.work;
+  if(dt.work){ setVal($('wStart'),dt.work.s); setVal($('wEnd'),dt.work.e); setVal($('wBrk'),dt.work.b); }
+  $('swDogs').checked=!!dt.dogs;
+  const c=dayCalc(state,key), r=rateFor(state.rates,key);
+  $('dogHint').textContent='תוספת '+money(r.dog)+' ליום';
+  const calc=$('wCalc');
+  if(dt.work){
+    const noRate=(r.mode==='flat'?!r.flat:!r.hourly);
+    calc.classList.toggle('warn',noRate);
+    calc.textContent=fmtHM(c.min)+' שעות · שכר '+money(c.work)+(c.travel?' · נסיעות '+money(c.travel):'')+(noRate?' — לא הוגדר שכר בהגדרות':'');
+  }
+  setVal($('note'),dt.note||'');
+}
+$('swWork').addEventListener('change',e=>{
+  const s=state.settings; dayRef().work=e.target.checked?{s:s.start,e:s.end,b:s.brk}:null; commitDay();
+});
+$('swDogs').addEventListener('change',e=>{ dayRef().dogs=e.target.checked; commitDay(); });
+$('wStart').addEventListener('change',e=>{ const d=dayRef(); if(d.work&&e.target.value){d.work.s=e.target.value;commitDay()} });
+$('wEnd').addEventListener('change',e=>{ const d=dayRef(); if(d.work&&e.target.value){d.work.e=e.target.value;commitDay()} });
+$('wBrk').addEventListener('change',e=>{ const d=dayRef(); if(d.work){d.work.b=clamp(num(e.target.value),0,600);e.target.value=d.work.b;commitDay()} });
+$('note').addEventListener('input',e=>{ dayRef().note=e.target.value.slice(0,120); commitDay(); });
+$('shClear').addEventListener('click',()=>{ delete state.days[UI.sk]; persist(); if(UI.view==='cal') renderCalendar(); closeSheet(); toast('היום נוקה'); });
+$('shDone').addEventListener('click',closeSheet);
+$('shX').addEventListener('click',closeSheet);
+bd.addEventListener('click',closeSheet);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
+
+/* ======================= SETTINGS VIEW ======================= */
+function numRow(label,id,val,suf,extra){
+  return '<div class="row"'+(extra||'')+'><label for="'+id+'">'+label+'</label><div class="val"><input class="inp" id="'+id+'" type="number" inputmode="decimal" step="any" min="0" value="'+esc(val)+'"><span class="suf">'+suf+'</span></div></div>';
+}
+function switchRow(label,id,on,sub){
+  return '<label class="row"><span class="lbl"><b>'+label+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</span><span class="sw"><input type="checkbox" id="'+id+'"'+(on?' checked':'')+'><i></i></span></label>';
+}
+function fmtFrom(f){ return f==='0000-00-00'?'מההתחלה':f.slice(8)+'/'+f.slice(5,7)+'/'+f.slice(0,4); }
+function renderSettings(){
+  const s=state.settings, tx=s.tax, r=rateFor(state.rates,todayKey());
+  UI.mode=r.mode;
+  const hist=state.rates.map(x=>'<div>'+fmtFrom(x.from)+': '+(x.mode==='flat'?'גלובלי '+N(money(x.flat)):'לשעה '+N(money(x.hourly)))+' · כלבים '+N(money(x.dog))+' · נסיעות '+N(money(x.travel))+'</div>').join('');
+  view.innerHTML=
+  '<header class="top"><h1>הגדרות</h1><p>הכל נשמר רק בדפדפן שלך</p></header>'+
+
+  '<h3 class="sec">משמרת קבועה</h3><div class="card">'+
+    '<div class="row"><label for="sStart">שעת התחלה</label><input class="inp" type="time" id="sStart" value="'+esc(s.start)+'"></div>'+
+    '<div class="row"><label for="sEnd">שעת סיום</label><input class="inp" type="time" id="sEnd" value="'+esc(s.end)+'"></div>'+
+    numRow('הפסקה לא משולמת','sBrk',s.brk,'דק׳')+
+  '</div><p class="note">אפשר לשנות שעות ליום בודד בלחיצה עליו בלוח השנה. משמרת שנגמרת אחרי חצות מחושבת נכון.</p>'+
+
+  '<h3 class="sec">שכר</h3><div class="card">'+
+    '<div class="row"><div class="seg" id="modeSeg"><button data-mode="hourly">לפי שעה</button><button data-mode="flat">גלובלי למשמרת</button></div></div>'+
+    numRow('שכר לשעה','rHourly',r.hourly,'₪',' id="rowHourly"')+
+    numRow('שכר למשמרת','rFlat',r.flat,'₪',' id="rowFlat"')+
+  '</div>'+
+
+  '<h3 class="sec">כלבים ונסיעות</h3><div class="card">'+
+    numRow('תעריף יומי לכלבים','rDog',r.dog,'₪')+
+    numRow('דמי נסיעות ליום עבודה','rTravel',r.travel,'₪')+
+  '</div>'+
+
+  '<h3 class="sec">מיסים וניכויים (הערכה)</h3><div class="card">'+
+    numRow('אחוז ניכוי כללי','tPct',tx.pct,'%')+
+    numRow('נקודות זיכוי','tPts',tx.points,'נק׳')+
+    numRow('ערך נקודת זיכוי לחודש','tPtVal',tx.pointVal,'₪')+
+    switchRow('לנכות גם מבונוס הכלבים','tDogs',tx.dogs)+
+    switchRow('לנכות גם מדמי נסיעות','tTravel',tx.travel)+
+  '</div><p class="note">ניכוי = (סכום חייב × אחוז) פחות (נקודות זיכוי × ערך נקודה), ולא פחות מאפס. שכר עבודה תמיד נכלל. זו הערכה בלבד ואינה תחליף לתלוש שכר – את ערך הנקודה הנוכחי כדאי לעדכן לפי רשות המסים.</p>'+
+
+  '<h3 class="sec">תחולת שינוי תעריפים</h3><div class="card"><div class="row"><label for="scope">החל שינוי בשכר, כלבים ונסיעות</label>'+
+    '<select class="inp" id="scope"><option value="all"'+(state.setupDone?'':' selected')+'>על כל הימים</option>'+
+    '<option value="month"'+(state.setupDone?' selected':'')+'>מתחילת החודש הנוכחי</option><option value="today">מהיום והלאה</option></select></div></div>'+
+  '<p class="note">התעריפים נשמרים לפי תאריך, כך ששינוי עתידי לא ישנה דוחות של חודשים קודמים.</p>'+
+  '<details><summary>היסטוריית תעריפים</summary><div class="hist">'+hist+'</div></details>'+
+
+  '<div style="margin-top:20px"><button class="btn block" id="saveSettings">שמירת הגדרות</button></div>'+
+
+  '<h3 class="sec">גיבוי ושחזור</h3><div class="card" style="padding:14px 16px"><div class="stack">'+
+    '<button class="btn ghost" id="bkExport">הורדת גיבוי (JSON)</button>'+
+    '<button class="btn ghost" id="bkImport">שחזור מקובץ גיבוי</button>'+
+    '<button class="btn ghost danger" id="bkReset">מחיקת כל הנתונים</button>'+
+    '<input type="file" id="bkFile" accept="application/json,.json" hidden></div></div>'+
+  '<p class="note">הנתונים נשמרים בדפדפן הזה בלבד. מומלץ להוריד גיבוי מדי פעם, במיוחד לפני ניקוי נתוני דפדפן או החלפת מכשיר.</p>';
+
+  const syncMode=()=>{
+    document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.mode===UI.mode));
+    $('rowHourly').hidden=UI.mode!=='hourly'; $('rowFlat').hidden=UI.mode!=='flat';
+  };
+  syncMode();
+  $('modeSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){UI.mode=b.dataset.mode;syncMode()} });
+  $('saveSettings').addEventListener('click',saveSettings);
+  $('bkExport').addEventListener('click',exportBackup);
+  $('bkImport').addEventListener('click',()=>$('bkFile').click());
+  $('bkFile').addEventListener('change',importBackup);
+  $('bkReset').addEventListener('click',()=>{
+    if(confirm('למחוק את כל הנתונים וההגדרות? אי אפשר לבטל.')){ state=defaultState(); persist(); renderSettings(); toast('הכל נמחק'); }
+  });
+}
+function saveSettings(){
+  const g=id=>$(id), s=state.settings, tx=s.tax;
+  s.start=TIME_RE.test(g('sStart').value)?g('sStart').value:'08:00';
+  s.end=TIME_RE.test(g('sEnd').value)?g('sEnd').value:'16:00';
+  s.brk=clamp(num(g('sBrk').value),0,600);
+  tx.pct=clamp(num(g('tPct').value),0,100); tx.points=clamp(num(g('tPts').value),0,30);
+  tx.pointVal=Math.max(0,num(g('tPtVal').value)); tx.dogs=g('tDogs').checked; tx.travel=g('tTravel').checked;
+  const rate={mode:UI.mode,hourly:Math.max(0,num(g('rHourly').value)),flat:Math.max(0,num(g('rFlat').value)),
+    dog:Math.max(0,num(g('rDog').value)),travel:Math.max(0,num(g('rTravel').value))};
+  applyRates(state,rate,g('scope').value,todayKey());
+  state.setupDone=true; persist();
+  const y=window.scrollY; renderSettings(); window.scrollTo(0,y);
+  toast('ההגדרות נשמרו ✓');
+}
+function download(name,text,type){
+  const url=URL.createObjectURL(new Blob([text],{type}));
+  const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+function exportBackup(){
+  download('shifts-backup-'+todayKey()+'.json',JSON.stringify(state,null,1),'application/json');
+  toast('הגיבוי הורד');
+}
+function importBackup(e){
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const obj=JSON.parse(rd.result);
+      if(!obj||typeof obj!=='object'||!obj.days||!obj.settings) throw new Error('bad');
+      if(!confirm('לשחזר מהגיבוי? הנתונים הקיימים יוחלפו.')) return;
+      state=normalize(obj); persist(); renderSettings(); toast('השחזור הושלם ✓');
+    }catch(err){ toast('הקובץ אינו גיבוי תקין'); }
+  };
+  rd.readAsText(f); e.target.value='';
+}
+
+/* ======================= EXPORT VIEW ======================= */
+function summaryHTML(){
+  const {t}=summarize(state,UI.ey,UI.em), tx=state.settings.tax;
+  const r=rateFor(state.rates,keyOf(UI.ey,UI.em,1));
+  return '<div class="stats">'+
+    '<div class="stat"><b>'+t.workDays+'</b><span>ימי עבודה</span></div>'+
+    '<div class="stat"><b>'+fmtHM(t.minutes)+'</b><span>סה״כ שעות</span><small>'+N(r2(t.minutes/60))+' עשרוני</small></div>'+
+    '<div class="stat"><b>'+t.dogDays+'</b><span>ימי כלבים</span></div></div>'+
+    '<div class="ln"><span>שכר עבודה</span><b>'+N(money(t.workPay))+'</b></div>'+
+    '<div class="ln"><span>בונוס כלבים</span><b>'+N(money(t.dogPay))+'</b></div>'+
+    '<div class="ln"><span>נסיעות</span><b>'+N(money(t.travel))+'</b></div>'+
+    '<div class="ln total"><span>ברוטו</span><b>'+N(money(t.gross))+'</b></div>'+
+    '<div class="ln neg"><span>ניכויים (משוער)'+(tx.pct?'<small>'+tx.pct+'%</small>':'')+'</span><b>'+N('−'+money(t.deduction))+'</b></div>'+
+    '<div class="ln net"><span>נטו משוער</span><b>'+N(money(t.net))+'</b></div>';
+}
+function updateExport(){
+  $('exSum').innerHTML=summaryHTML();
+  $('exPrev').value=buildWhatsApp(state,UI.ey,UI.em,UI.exp);
+}
+function renderExport(){
+  const ys=new Set(); const cy=todayParts().y;
+  for(let y=cy-3;y<=cy+1;y++) ys.add(y);
+  Object.keys(state.days).forEach(k=>ys.add(+k.slice(0,4))); ys.add(UI.ey);
+  const years=[...ys].sort((a,b)=>a-b);
+  view.innerHTML=
+  '<header class="top"><h1>ייצוא דוח</h1><p>בחרו חודש וקבלו סיכום מוכן</p></header>'+
+  '<div class="card"><div class="sel2"><select class="inp" id="exM" aria-label="חודש">'+
+    MONTHS.map((n,i)=>'<option value="'+i+'"'+(i===UI.em?' selected':'')+'>'+n+'</option>').join('')+'</select>'+
+    '<select class="inp" id="exY" aria-label="שנה">'+years.map(y=>'<option'+(y===UI.ey?' selected':'')+'>'+y+'</option>').join('')+'</select></div></div>'+
+  '<h3 class="sec">סיכום חודשי</h3><div class="card" id="exSum"></div>'+
+  '<h3 class="sec">אפשרויות טקסט</h3><div class="card">'+
+    switchRow('רק ימים עם פעילות','oActive',UI.exp.onlyActive,'ברירת מחדל: כל ימי החודש, כולל שישי ושבת')+
+    switchRow('לכלול סכומים (₪)','oMoney',UI.exp.money)+
+  '</div>'+
+  '<div class="stack" style="margin-top:18px">'+
+    '<button class="btn wa" id="btnCopy">📋 העתק טקסט לווצאפ</button>'+
+    '<button class="btn" id="btnCsv">⬇️ הורד קובץ אקסל (CSV)</button>'+
+    '<button class="btn ghost small" id="btnWA">פתח ישירות בווצאפ</button></div>'+
+  '<details id="prevBox"><summary>תצוגה מקדימה של הטקסט</summary><textarea class="prev" id="exPrev" readonly></textarea></details>';
+
+  $('exM').addEventListener('change',e=>{UI.em=+e.target.value;updateExport()});
+  $('exY').addEventListener('change',e=>{UI.ey=+e.target.value;updateExport()});
+  $('oActive').addEventListener('change',e=>{UI.exp.onlyActive=e.target.checked;updateExport()});
+  $('oMoney').addEventListener('change',e=>{UI.exp.money=e.target.checked;updateExport()});
+  $('btnCopy').addEventListener('click',async()=>{
+    const ok=await copyText(buildWhatsApp(state,UI.ey,UI.em,UI.exp));
+    if(ok) toast('הועתק ✓ אפשר להדביק בווצאפ');
+    else { $('prevBox').open=true; $('exPrev').select(); toast('ההעתקה נכשלה – העתיקו ידנית מהתצוגה המקדימה'); }
+  });
+  $('btnCsv').addEventListener('click',()=>{
+    download('shifts-'+UI.ey+'-'+pad(UI.em+1)+'.csv',buildCSV(state,UI.ey,UI.em),'text/csv;charset=utf-8');
+    toast('הקובץ הורד');
+  });
+  $('btnWA').addEventListener('click',()=>{
+    window.open('https://wa.me/?text='+encodeURIComponent(buildWhatsApp(state,UI.ey,UI.em,UI.exp)),'_blank','noopener');
+  });
+  updateExport();
+}
+async function copyText(txt){
+  try{ await navigator.clipboard.writeText(txt); return true; }
+  catch(e){
+    const ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:0;opacity:0'; document.body.appendChild(ta); ta.select();
+    let ok=false; try{ok=document.execCommand('copy')}catch(_){} ta.remove(); return ok;
+  }
+}
+
+/* ======================= NAV / BOOT ======================= */
+function setView(v){
+  closeSheet(); UI.view=v;
+  if(v==='export'){UI.ey=UI.vy;UI.em=UI.vm}
+  document.querySelectorAll('nav button').forEach(b=>{
+    const on=b.dataset.view===v; b.classList.toggle('on',on); b.setAttribute('aria-current',on?'page':'false');
+  });
+  ({cal:renderCalendar,settings:renderSettings,export:renderExport})[v]();
+  window.scrollTo(0,0);
+}
+document.querySelector('nav').addEventListener('click',e=>{ const b=e.target.closest('button[data-view]'); if(b) setView(b.dataset.view); });
+view.addEventListener('click',e=>{
+  const day=e.target.closest('[data-key]'); if(day){ openSheet(day.dataset.key); return; }
+  const go=e.target.closest('[data-go]'); if(go){ setView(go.dataset.go); return; }
+  const a=e.target.closest('[data-act]'); if(!a) return;
+  if(a.dataset.act==='prev') shiftMonth(-1);
+  else if(a.dataset.act==='next') shiftMonth(1);
+  else if(a.dataset.act==='today'){ const t=todayParts(); UI.vy=t.y; UI.vm=t.m; renderCalendar(); }
+});
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&UI.view==='cal'&&!UI.sk) renderCalendar(); });
+
+/* ---- PWA niceties: generated icon + manifest (no external files) ---- */
+function makeIcon(size){
+  const c=document.createElement('canvas'); c.width=c.height=size; const x=c.getContext('2d'); if(!x) return '';
+  const g=x.createLinearGradient(0,0,size,size); g.addColorStop(0,'#0a84ff'); g.addColorStop(1,'#5e5ce6');
+  x.fillStyle=g; x.fillRect(0,0,size,size);
+  x.strokeStyle='#fff'; x.lineCap='round'; x.lineJoin='round'; x.lineWidth=size*.06;
+  x.beginPath(); x.arc(size/2,size/2,size*.27,0,Math.PI*2); x.stroke();
+  x.beginPath(); x.moveTo(size/2,size*.35); x.lineTo(size/2,size/2); x.lineTo(size*.6,size*.575); x.stroke();
+  return c.toDataURL('image/png');
+}
+try{
+  const i180=makeIcon(180); $('touchIcon').href=i180; $('favicon').href=makeIcon(64);
+  if(/^https?:$/.test(location.protocol)){
+    const mf={name:'משמרות וכלבים',short_name:'משמרות',lang:'he',dir:'rtl',display:'standalone',orientation:'portrait',
+      background_color:'#000000',theme_color:'#000000',start_url:location.href.split('#')[0],
+      icons:[{src:makeIcon(192),sizes:'192x192',type:'image/png'},{src:makeIcon(512),sizes:'512x512',type:'image/png',purpose:'any'}]};
+    const l=document.createElement('link'); l.rel='manifest';
+    l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'})); document.head.appendChild(l);
+  }
+}catch(e){}
+
+renderCalendar();
+})();
+</script>
+</body>
+</html>
