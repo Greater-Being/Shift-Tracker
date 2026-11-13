@@ -303,6 +303,16 @@ body{background:radial-gradient(620px 420px at 90% -8%,rgba(255,255,255,.09),tra
 .calc,.calc.warn{color:#d6d6dd}
 .ln.net b,.chip b.net{color:#fff}
 nav button.on{background:#fff;color:#0b0b0d}
+.ln.sub{font-size:13.5px;color:var(--muted);padding:8px 0}.ln.sub span{padding-inline-start:14px}
+
+/* worked days: opaque gloss */
+.day .num,.day .meta{position:relative;z-index:1}
+.day.worked{background:linear-gradient(180deg,#4b4b54 0%,#2c2c33 52%,#1e1e24 100%);border:1px solid rgba(255,255,255,.26);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.38),inset 0 -12px 18px rgba(0,0,0,.35),0 5px 14px rgba(0,0,0,.45)}
+.day.worked::before{content:"";position:absolute;inset:1px 1px 50% 1px;border-radius:16px 16px 50% 50%/16px 16px 22% 22%;
+  background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.03));pointer-events:none}
+.day.worked.sel{border-color:#fff}
+.lg.w{background:linear-gradient(180deg,#5a5a64,#26262c);border-color:rgba(255,255,255,.5)}
 </style>
 </head>
 <body>
@@ -383,9 +393,9 @@ const money=n=>{const v=r2(n);return v.toLocaleString('he-IL',{minimumFractionDi
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const defaultState=()=>({
-  v:1,setupDone:false,
+  v:2,setupDone:false,
   settings:{start:'08:00',end:'16:00',brk:0,
-    tax:{pct:0,points:0,pointVal:242,dogs:false,travel:false}},
+    tax:{points:8.25,pointVal:242,dogs:true,travel:true}},
   rates:[{from:'0000-00-00',mode:'hourly',hourly:0,flat:0,dog:60,travel:0}],
   days:{}
 });
@@ -396,8 +406,8 @@ function normalize(s){
   if(TIME_RE.test(st.start)) o.settings.start=st.start;
   if(TIME_RE.test(st.end)) o.settings.end=st.end;
   o.settings.brk=clamp(num(st.brk),0,600);
-  D.pct=clamp(num(tx.pct,D.pct),0,100); D.points=clamp(num(tx.points,D.points),0,30);
-  D.pointVal=Math.max(0,num(tx.pointVal,D.pointVal)); D.dogs=!!tx.dogs; D.travel=!!tx.travel;
+  if((+s.v||1)>=2){ D.points=clamp(num(tx.points,D.points),0,30);
+    D.pointVal=Math.max(0,num(tx.pointVal,D.pointVal)); D.dogs=!!tx.dogs; D.travel=!!tx.travel; }   // גרסה ישנה: עוברים לברירות המחדל החדשות פעם אחת
   if(Array.isArray(s.rates)){
     const rs=s.rates.filter(r=>r&&DATE_RE.test(r.from)).map(r=>({from:r.from,mode:r.mode==='flat'?'flat':'hourly',
       hourly:Math.max(0,num(r.hourly)),flat:Math.max(0,num(r.flat)),dog:Math.max(0,num(r.dog,60)),travel:Math.max(0,num(r.travel))}))
@@ -451,9 +461,21 @@ function summarize(st,y,m){
   t.workPay=r2(t.workPay); t.dogPay=r2(t.dogPay); t.travel=r2(t.travel);
   t.gross=r2(t.workPay+t.dogPay+t.travel);
   const base=t.workPay+(tx.dogs?t.dogPay:0)+(tx.travel?t.travel:0);
-  t.deduction=r2(Math.min(base,Math.max(0,base*(tx.pct/100)-tx.points*tx.pointVal)));
+  t.base=r2(base); const c=calcTax(base,tx.points,tx.pointVal);
+  t.incomeTax=c.tax; t.marg=c.marg; t.bl=c.bl; t.hl=c.hl; t.deduction=Math.min(t.gross,c.tax+c.bl+c.hl);
   t.net=r2(t.gross-t.deduction);
   return {rows,t};
+}
+/* ---- מס 2026 (מדרגות מוקפאות עד 2027), חישוב חודשי. אומת מול תלוש 10/2026 ---- */
+const TAXC={br:[[7010,.10],[10060,.14],[16150,.20],[22440,.31],[46690,.35],[60130,.47],[Infinity,.50]],
+  low:7703,cap:51910,bl:[.0104,.07],hl:[.0323,.0517]};
+function calcTax(base,points,pv){
+  let tx=0,prev=0,marg=.10;
+  for(const [cap,r] of TAXC.br){ if(base>prev){ tx+=(Math.min(base,cap)-prev)*r; marg=r; } prev=cap; }
+  const credit=points*pv, tax=Math.max(0,tx-credit);
+  const lo=Math.min(base,TAXC.low), hi=Math.max(0,Math.min(base,TAXC.cap)-TAXC.low);
+  return {gross:r2(tx),tax:Math.round(tax),marg,
+    bl:Math.ceil(lo*TAXC.bl[0]+hi*TAXC.bl[1]-1e-9), hl:Math.round(lo*TAXC.hl[0]+hi*TAXC.hl[1])};
 }
 const sameRate=(a,b)=>a.mode===b.mode&&a.hourly===b.hourly&&a.flat===b.flat&&a.dog===b.dog&&a.travel===b.travel;
 function applyRates(st,rate,scope,todayKey){
@@ -649,13 +671,12 @@ function renderSettings(){
     numRow('דמי נסיעות ליום עבודה','rTravel',r.travel,'₪')+
   '</div>'+
 
-  '<h3 class="sec">מיסים וניכויים (הערכה)</h3><div class="card">'+
-    numRow('אחוז ניכוי כללי','tPct',tx.pct,'%')+
-    numRow('נקודות זיכוי','tPts',tx.points,'נק׳')+
+  '<h3 class="sec">מיסים וניכויים (חישוב אוטומטי)</h3><div class="card">'+
+    numRow('נקודות זיכוי (רגילות + נוספות)','tPts',tx.points,'נק׳')+
     numRow('ערך נקודת זיכוי לחודש','tPtVal',tx.pointVal,'₪')+
-    switchRow('לנכות גם מבונוס הכלבים','tDogs',tx.dogs)+
-    switchRow('לנכות גם מדמי נסיעות','tTravel',tx.travel)+
-  '</div><p class="note">ניכוי = (סכום חייב × אחוז) פחות (נקודות זיכוי × ערך נקודה), ולא פחות מאפס. שכר עבודה תמיד נכלל. זו הערכה בלבד ואינה תחליף לתלוש שכר – את ערך הנקודה הנוכחי כדאי לעדכן לפי רשות המסים.</p>'+
+    switchRow('כלבים (החזר הוצאות) נכללים בבסיס','tDogs',tx.dogs,'לפי התלוש שלך: כן')+
+    switchRow('נסיעות נכללות בבסיס','tTravel',tx.travel,'לפי התלוש שלך: כן')+
+  '</div><p class="note">מס הכנסה (מדרגות 2026), ביטוח לאומי ומס בריאות (מדרגה מופחתת עד 7,703 ₪, מלאה עד 51,910 ₪) מחושבים לבד מהבסיס החודשי. ברירת המחדל 8.25 נקודות (2.25 רגילות + 6.00 נוספות) ושני המתגים פעילים, כפי שמופיע בתלוש 10/2026. הערכה ואינה תחליף לתלוש.</p>'+
 
   '<h3 class="sec">תחולת שינוי תעריפים</h3><div class="card"><div class="row"><label for="scope">החל שינוי בשכר, כלבים ונסיעות</label>'+
     '<select class="inp" id="scope"><option value="all"'+(state.setupDone?'':' selected')+'>על כל הימים</option>'+
@@ -691,7 +712,7 @@ function saveSettings(){
   s.start=TIME_RE.test(g('sStart').value)?g('sStart').value:'08:00';
   s.end=TIME_RE.test(g('sEnd').value)?g('sEnd').value:'16:00';
   s.brk=clamp(num(g('sBrk').value),0,600);
-  tx.pct=clamp(num(g('tPct').value),0,100); tx.points=clamp(num(g('tPts').value),0,30);
+  tx.points=clamp(num(g('tPts').value),0,30);
   tx.pointVal=Math.max(0,num(g('tPtVal').value)); tx.dogs=g('tDogs').checked; tx.travel=g('tTravel').checked;
   const rate={mode:UI.mode,hourly:Math.max(0,num(g('rHourly').value)),flat:Math.max(0,num(g('rFlat').value)),
     dog:Math.max(0,num(g('rDog').value)),travel:Math.max(0,num(g('rTravel').value))};
@@ -735,7 +756,10 @@ function summaryHTML(){
     '<div class="ln"><span>בונוס כלבים</span><b>'+N(money(t.dogPay))+'</b></div>'+
     '<div class="ln"><span>נסיעות</span><b>'+N(money(t.travel))+'</b></div>'+
     '<div class="ln total"><span>ברוטו</span><b>'+N(money(t.gross))+'</b></div>'+
-    '<div class="ln neg"><span>ניכויים (משוער)'+(tx.pct?'<small>'+tx.pct+'%</small>':'')+'</span><b>'+N('−'+money(t.deduction))+'</b></div>'+
+    '<div class="ln neg"><span>ניכויים (משוער)</span><b>'+N('−'+money(t.deduction))+'</b></div>'+
+    '<div class="ln sub"><span>מס הכנסה<small>מדרגה '+Math.round(t.marg*100)+'%</small></span><b>'+N(money(t.incomeTax))+'</b></div>'+
+    '<div class="ln sub"><span>ביטוח לאומי</span><b>'+N(money(t.bl))+'</b></div>'+
+    '<div class="ln sub"><span>מס בריאות</span><b>'+N(money(t.hl))+'</b></div>'+
     '<div class="ln net"><span>נטו משוער</span><b>'+N(money(t.net))+'</b></div>';
 }
 function updateExport(){
