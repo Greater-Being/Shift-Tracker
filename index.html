@@ -309,10 +309,10 @@ nav button.on{background:#fff;color:#0b0b0d}
 .day .num,.day .meta{position:relative;z-index:1}
 .day:not(.worked):not(.empty){background:#0d0d10}
 .day.worked{background-color:#0d0d10;
-  background-image:radial-gradient(60% 34% at 15% 12%,rgba(255,255,255,.46),transparent 70%),
-    radial-gradient(55% 38% at 88% 38%,rgba(210,214,230,.38),transparent 70%),
-    radial-gradient(60% 34% at 30% 78%,rgba(255,255,255,.34),transparent 70%),
-    radial-gradient(45% 30% at 95% 100%,rgba(190,195,215,.30),transparent 70%),linear-gradient(rgba(255,255,255,.08),rgba(255,255,255,.08));
+  background-image:radial-gradient(60% 34% at 15% 12%,rgba(255,255,255,.22),transparent 70%),
+    radial-gradient(55% 38% at 88% 38%,rgba(205,205,210,.17),transparent 70%),
+    radial-gradient(60% 34% at 30% 78%,rgba(255,255,255,.17),transparent 70%),
+    radial-gradient(45% 30% at 95% 100%,rgba(195,195,200,.14),transparent 70%),linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,.05));
   background-size:var(--gw,100%) var(--gh,100%),var(--gw,100%) var(--gh,100%),var(--gw,100%) var(--gh,100%),var(--gw,100%) var(--gh,100%),100% 100%;
   background-position:var(--ox,0) var(--oy,0),var(--ox,0) var(--oy,0),var(--ox,0) var(--oy,0),var(--ox,0) var(--oy,0),0 0;
   background-repeat:no-repeat;background-origin:border-box;
@@ -322,6 +322,39 @@ nav button.on{background:#fff;color:#0b0b0d}
 .lg.w{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.4)}
 .btn.dog{background:transparent;border:1px dashed rgba(255,255,255,.42);color:#fff;box-shadow:none}
 .sel-grid .btn{min-height:48px;font-size:14px}
+
+/* ===== calendar fits one screen, no scrolling ===== */
+.app:has(>.grid){height:100dvh;display:flex;flex-direction:column;padding-top:calc(env(safe-area-inset-top) + 8px);
+  padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) - 8px)}
+.app:has(>.grid)>*{flex:none}
+.app:has(>.grid) .mhead{margin:0 0 8px}
+.app:has(>.grid) .ic{width:38px;height:38px}
+.app:has(>.grid) .mtitle h1{font-size:26px}
+.app:has(>.grid) .link{padding:0 6px;font-size:12.5px}
+.app:has(>.grid) .bal{padding:14px 16px 12px;margin-bottom:8px;border-radius:26px}
+.app:has(>.grid) .bal .t{font-size:13px}
+.app:has(>.grid) .bal .big{font-size:42px;margin:2px 0 8px}
+.app:has(>.grid) .bal .big small{font-size:22px}
+.app:has(>.grid) .bal .pill{padding:5px 12px;font-size:12px}
+.app:has(>.grid) .chips{gap:8px;margin-bottom:10px}
+.app:has(>.grid) .chip{padding:8px 4px;border-radius:16px}
+.app:has(>.grid) .chip b{font-size:17px}
+.app:has(>.grid) .chip span.l{font-size:10.5px;margin-top:0}
+.app:has(>.grid) .dow{margin-bottom:4px}
+.app:has(>.grid) .grid{flex:1 1 auto;grid-auto-rows:minmax(34px,1fr);gap:5px}
+.app:has(>.grid) .day{aspect-ratio:auto;height:auto;min-height:0;padding:3px 1px;border-radius:14px;justify-content:space-between}
+.app:has(>.grid) .day .num{font-size:14px;min-width:20px;height:20px;line-height:20px}
+.app:has(>.grid) .day .meta{min-height:12px;font-size:10px}
+.app:has(>.grid) .day .meta b{font-size:10.5px}
+.app:has(>.grid) .day .meta em{font-size:11px}
+.app:has(>.grid) .legend{margin:8px 0 0;font-size:11.5px}
+/* multi-select: bar replaces the nav, grid keeps its size */
+body.selecting nav{display:none}
+.selbar{left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);max-width:700px;padding:8px 10px 10px;border-radius:26px;border:1px solid var(--line)}
+.sel-top{margin-bottom:6px}
+.sel-grid .btn{min-height:42px;padding:6px 2px}
+.app.selecting:has(>.grid){padding-bottom:calc(env(safe-area-inset-bottom) + 112px)}
+.app.selecting .legend{display:none}
 </style>
 </head>
 <body>
@@ -582,7 +615,6 @@ function renderCalendar(){
       '<span class="meta">'+(dt.work?'<b>'+fmtHM(min)+'</b>':'')+(dt.dogs?'<em>🐾</em>':'')+'</span></button>';
   }
   h+='</div><div class="legend"><span><i class="lg w"></i>עבדתי</span><span>🐾 הכלבים אצלי</span><span><i class="lg t"></i>היום</span></div>';
-  h+='<p class="note" style="text-align:center">טיפ: לחיצה ארוכה על יום מפעילה בחירה של כמה ימים בבת אחת</p>';
   view.innerHTML=h;
   refreshSel(); applyBackdrop();
 }
@@ -844,6 +876,7 @@ function rangeSel(a,b){
 function refreshSel(){
   document.querySelectorAll('.day[data-key]').forEach(el=>el.classList.toggle('sel',UI.sel.has(el.dataset.key)));
   const on=UI.selMode&&UI.view==='cal', n=UI.sel.size;
+  document.body.classList.toggle('selecting',on);
   $('selbar').hidden=!on; view.classList.toggle('selecting',on);
   $('selCount').textContent=n===0?'בחרו ימים':n===1?'נבחר יום אחד':'נבחרו '+n+' ימים';
   document.querySelectorAll('#selbar [data-a]').forEach(b=>b.disabled=n===0);
