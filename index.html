@@ -305,14 +305,23 @@ body{background:radial-gradient(620px 420px at 90% -8%,rgba(255,255,255,.09),tra
 nav button.on{background:#fff;color:#0b0b0d}
 .ln.sub{font-size:13.5px;color:var(--muted);padding:8px 0}.ln.sub span{padding-inline-start:14px}
 
-/* worked days: opaque gloss */
+/* worked days: frosted glass; one shared backdrop, visible only through worked tiles (offsets set by applyBackdrop) */
 .day .num,.day .meta{position:relative;z-index:1}
-.day.worked{background:linear-gradient(180deg,#4b4b54 0%,#2c2c33 52%,#1e1e24 100%);border:1px solid rgba(255,255,255,.26);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.38),inset 0 -12px 18px rgba(0,0,0,.35),0 5px 14px rgba(0,0,0,.45)}
-.day.worked::before{content:"";position:absolute;inset:1px 1px 50% 1px;border-radius:16px 16px 50% 50%/16px 16px 22% 22%;
-  background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.03));pointer-events:none}
+.day:not(.worked):not(.empty){background:#0d0d10}
+.day.worked{background-color:#0d0d10;
+  background-image:radial-gradient(60% 34% at 15% 12%,rgba(255,255,255,.46),transparent 70%),
+    radial-gradient(55% 38% at 88% 38%,rgba(210,214,230,.38),transparent 70%),
+    radial-gradient(60% 34% at 30% 78%,rgba(255,255,255,.34),transparent 70%),
+    radial-gradient(45% 30% at 95% 100%,rgba(190,195,215,.30),transparent 70%),linear-gradient(rgba(255,255,255,.08),rgba(255,255,255,.08));
+  background-size:var(--gw,100%) var(--gh,100%),var(--gw,100%) var(--gh,100%),var(--gw,100%) var(--gh,100%),var(--gw,100%) var(--gh,100%),100% 100%;
+  background-position:var(--ox,0) var(--oy,0),var(--ox,0) var(--oy,0),var(--ox,0) var(--oy,0),var(--ox,0) var(--oy,0),0 0;
+  background-repeat:no-repeat;background-origin:border-box;
+  border:1px solid rgba(255,255,255,.16);box-shadow:0 1px 0 rgba(255,255,255,.16) inset}
+.day.worked::before{content:none}
 .day.worked.sel{border-color:#fff}
-.lg.w{background:linear-gradient(180deg,#5a5a64,#26262c);border-color:rgba(255,255,255,.5)}
+.lg.w{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.4)}
+.btn.dog{background:transparent;border:1px dashed rgba(255,255,255,.42);color:#fff;box-shadow:none}
+.sel-grid .btn{min-height:48px;font-size:14px}
 </style>
 </head>
 <body>
@@ -362,10 +371,10 @@ nav button.on{background:#fff;color:#0b0b0d}
     <button class="ic sm" id="selX" aria-label="סיום בחירה"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="sel-grid">
-    <button class="btn small green" data-a="workOn">✅ עבדתי</button>
-    <button class="btn small ghost" data-a="workOff">❌ לא עבדתי</button>
-    <button class="btn small orange" data-a="dogOn">🐾 כלבים</button>
-    <button class="btn small ghost" data-a="dogOff">🚫 בלי כלבים</button>
+    <button class="btn small green" data-a="workOn">עבדתי</button>
+    <button class="btn small ghost" data-a="workOff">לא עבדתי</button>
+    <button class="btn small dog" data-a="dogOn">כלבים אצלי</button>
+    <button class="btn small dog" data-a="dogOff">בלי כלבים</button>
   </div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -575,8 +584,19 @@ function renderCalendar(){
   h+='</div><div class="legend"><span><i class="lg w"></i>עבדתי</span><span>🐾 הכלבים אצלי</span><span><i class="lg t"></i>היום</span></div>';
   h+='<p class="note" style="text-align:center">טיפ: לחיצה ארוכה על יום מפעילה בחירה של כמה ימים בבת אחת</p>';
   view.innerHTML=h;
-  refreshSel();
+  refreshSel(); applyBackdrop();
 }
+function applyBackdrop(){
+  const g=view.querySelector('.grid'); if(!g) return;
+  const gr=g.getBoundingClientRect();
+  g.querySelectorAll('.day.worked').forEach(el=>{
+    const r=el.getBoundingClientRect();
+    el.style.setProperty('--ox',(gr.left-r.left)+'px'); el.style.setProperty('--oy',(gr.top-r.top)+'px');
+    el.style.setProperty('--gw',gr.width+'px'); el.style.setProperty('--gh',gr.height+'px');
+  });
+}
+window.addEventListener('resize',applyBackdrop);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(applyBackdrop);
 function shiftMonth(delta){
   let m=UI.vm+delta,y=UI.vy;
   if(m<0){m=11;y--}else if(m>11){m=0;y++}
