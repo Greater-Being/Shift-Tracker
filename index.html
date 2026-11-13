@@ -341,7 +341,8 @@ nav button.on{background:#fff;color:#0b0b0d}
 .app:has(>.grid) .chip b{font-size:17px}
 .app:has(>.grid) .chip span.l{font-size:10.5px;margin-top:0}
 .app:has(>.grid) .dow{margin-bottom:4px}
-.app:has(>.grid) .grid{flex:1 1 auto;grid-auto-rows:minmax(34px,1fr);gap:5px}
+.app:has(>.grid) .grid{flex:1 1 auto;grid-auto-rows:minmax(34px,1fr);gap:5px;align-content:start;
+  max-height:calc(var(--rows,6)*54px + (var(--rows,6) - 1)*5px)}
 .app:has(>.grid) .day{aspect-ratio:auto;height:auto;min-height:0;padding:3px 1px;border-radius:14px;justify-content:space-between}
 .app:has(>.grid) .day .num{font-size:14px;min-width:20px;height:20px;line-height:20px}
 .app:has(>.grid) .day .meta{min-height:12px;font-size:10px}
@@ -604,7 +605,7 @@ function renderCalendar(){
     '<div class="chip"><b>'+fmtHM(t.minutes)+'</b><span class="l">שעות</span></div>'+
     '<div class="chip"><b>'+t.dogDays+'</b><span class="l">ימי כלבים</span></div></div>';
 
-  h+='<div class="dow">'+DOW_SHORT.map(s=>'<span>'+s+'</span>').join('')+'</div><div class="grid">';
+  h+='<div class="dow">'+DOW_SHORT.map(s=>'<span>'+s+'</span>').join('')+'</div><div class="grid" style="--rows:'+Math.ceil((first+n)/7)+'">';
   for(let i=0;i<first;i++) h+='<div class="day empty"></div>';
   for(let d=1;d<=n;d++){
     const key=keyOf(y,m,d), dt=state.days[key]||{}, dow=(first+d-1)%7;
