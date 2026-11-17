@@ -438,6 +438,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const defaultState=()=>({
   v:2,setupDone:false,
   settings:{start:'08:00',end:'16:00',brk:0,
+    ot:{on:true,dailyH:8,t1H:2,p1:125,p2:150},
     tax:{points:8.25,pointVal:242,dogs:true,travel:true}},
   rates:[{from:'0000-00-00',mode:'hourly',hourly:0,flat:0,dog:60,travel:0}],
   days:{}
@@ -449,6 +450,9 @@ function normalize(s){
   if(TIME_RE.test(st.start)) o.settings.start=st.start;
   if(TIME_RE.test(st.end)) o.settings.end=st.end;
   o.settings.brk=clamp(num(st.brk),0,600);
+  if(st.ot&&typeof st.ot==='object'){ const q=st.ot,O=o.settings.ot;
+    O.on=q.on!==false; O.dailyH=clamp(num(q.dailyH,O.dailyH),1,24); O.t1H=clamp(num(q.t1H,O.t1H),0,24);
+    O.p1=clamp(num(q.p1,O.p1),100,300); O.p2=clamp(num(q.p2,O.p2),100,300); }
   if((+s.v||1)>=2){ D.points=clamp(num(tx.points,D.points),0,30);
     D.pointVal=Math.max(0,num(tx.pointVal,D.pointVal)); D.dogs=!!tx.dogs; D.travel=!!tx.travel; }   // גרסה ישנה: עוברים לברירות המחדל החדשות פעם אחת
   if(Array.isArray(s.rates)){
@@ -483,25 +487,32 @@ function rateFor(rates,key){
 }
 function dayCalc(st,key){
   const d=st.days[key]||{}, r=rateFor(st.rates,key);
-  const o={worked:!!d.work,dogs:!!d.dogs,min:0,work:0,dog:0,travel:0};
+  const o={worked:!!d.work,dogs:!!d.dogs,min:0,work:0,dog:0,travel:0,otMin:0,otPay:0};
   if(d.work){
     o.min=shiftMinutes(d.work);
-    o.work=r.mode==='flat'?(+r.flat||0):(o.min/60)*(+r.hourly||0);
+    if(r.mode==='flat') o.work=+r.flat||0;
+    else{
+      const O=st.settings.ot, h=+r.hourly||0, plain=(o.min/60)*h;
+      if(O&&O.on&&o.min>O.dailyH*60){
+        const reg=O.dailyH*60, over=o.min-reg, a=Math.min(over,O.t1H*60), b=over-a;
+        o.work=((reg)+a*O.p1/100+b*O.p2/100)/60*h; o.otMin=over; o.otPay=o.work-plain;
+      } else o.work=plain;
+    }
     o.travel=+r.travel||0;
   }
   if(d.dogs) o.dog=+r.dog||0;
   return o;
 }
 function summarize(st,y,m){
-  const n=daysIn(y,m), rows=[], t={workDays:0,minutes:0,workPay:0,dogDays:0,dogPay:0,travel:0};
+  const n=daysIn(y,m), rows=[], t={workDays:0,minutes:0,workPay:0,dogDays:0,dogPay:0,travel:0,otMin:0,otPay:0};
   for(let d=1;d<=n;d++){
     const key=keyOf(y,m,d), c=dayCalc(st,key), dt=st.days[key]||{};
     rows.push({d,key,dow:new Date(y,m,d).getDay(),c,work:dt.work||null,dogs:!!dt.dogs,note:dt.note||''});
-    if(c.worked){t.workDays++;t.minutes+=c.min;t.workPay+=c.work;t.travel+=c.travel}
+    if(c.worked){t.workDays++;t.minutes+=c.min;t.workPay+=c.work;t.travel+=c.travel;t.otMin+=c.otMin;t.otPay+=c.otPay}
     if(c.dogs){t.dogDays++;t.dogPay+=c.dog}
   }
   const tx=st.settings.tax;
-  t.workPay=r2(t.workPay); t.dogPay=r2(t.dogPay); t.travel=r2(t.travel);
+  t.workPay=r2(t.workPay); t.otPay=r2(t.otPay); t.dogPay=r2(t.dogPay); t.travel=r2(t.travel);
   t.gross=r2(t.workPay+t.dogPay+t.travel);
   const base=t.workPay+(tx.dogs?t.dogPay:0)+(tx.travel?t.travel:0);
   t.base=r2(base); const c=calcTax(base,tx.points,tx.pointVal);
@@ -719,6 +730,13 @@ function renderSettings(){
     numRow('שכר למשמרת','rFlat',r.flat,'₪',' id="rowFlat"')+
   '</div>'+
 
+  '<h3 class="sec">שעות נוספות</h3><div class="card">'+
+    switchRow('חישוב שעות נוספות','oOn',s.ot.on,'לפי יום, בשכר לשעה בלבד')+
+    numRow('יום עבודה רגיל עד','oDaily',s.ot.dailyH,'שעות')+
+    numRow('שעות בתעריף הראשון','oT1',s.ot.t1H,'שעות')+
+    numRow('תעריף ראשון','oP1',s.ot.p1,'%')+
+    numRow('תעריף שני (מעבר לכך)','oP2',s.ot.p2,'%')+
+  '</div><p class="note">ברירת מחדל: 8 שעות רגילות, השעתיים הבאות ב-125% והשאר ב-150%. בשבוע עבודה של 5 ימים יש מקומות שבהם היום הרגיל הוא 8.4 שעות (8:24), ואפשר לכתוב 8.4. תוספות שבת, חג ושעות נוספות שבועיות לא מחושבות.</p>'+
   '<h3 class="sec">כלבים ונסיעות</h3><div class="card">'+
     numRow('תעריף יומי לכלבים','rDog',r.dog,'₪')+
     numRow('דמי נסיעות ליום עבודה','rTravel',r.travel,'₪')+
@@ -765,6 +783,8 @@ function saveSettings(){
   s.start=TIME_RE.test(g('sStart').value)?g('sStart').value:'08:00';
   s.end=TIME_RE.test(g('sEnd').value)?g('sEnd').value:'16:00';
   s.brk=clamp(num(g('sBrk').value),0,600);
+  s.ot={on:g('oOn').checked,dailyH:clamp(num(g('oDaily').value,8),1,24),t1H:clamp(num(g('oT1').value,2),0,24),
+    p1:clamp(num(g('oP1').value,125),100,300),p2:clamp(num(g('oP2').value,150),100,300)};
   tx.points=clamp(num(g('tPts').value),0,30);
   tx.pointVal=Math.max(0,num(g('tPtVal').value)); tx.dogs=g('tDogs').checked; tx.travel=g('tTravel').checked;
   const rate={mode:UI.mode,hourly:Math.max(0,num(g('rHourly').value)),flat:Math.max(0,num(g('rFlat').value)),
@@ -806,6 +826,7 @@ function summaryHTML(){
     '<div class="stat"><b>'+fmtHM(t.minutes)+'</b><span>סה״כ שעות</span><small>'+N(r2(t.minutes/60))+' עשרוני</small></div>'+
     '<div class="stat"><b>'+t.dogDays+'</b><span>ימי כלבים</span></div></div>'+
     '<div class="ln"><span>שכר עבודה</span><b>'+N(money(t.workPay))+'</b></div>'+
+    (t.otMin>0?'<div class="ln sub"><span>מתוכו שעות נוספות<small>'+fmtHM(t.otMin)+' שעות</small></span><b>'+N(money(t.otPay))+'</b></div>':'')+
     '<div class="ln"><span>בונוס כלבים</span><b>'+N(money(t.dogPay))+'</b></div>'+
     '<div class="ln"><span>נסיעות</span><b>'+N(money(t.travel))+'</b></div>'+
     '<div class="ln total"><span>ברוטו</span><b>'+N(money(t.gross))+'</b></div>'+
