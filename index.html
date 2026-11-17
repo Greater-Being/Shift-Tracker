@@ -542,23 +542,25 @@ function applyRates(st,rate,scope,todayKey){
 }
 
 function buildWhatsApp(st,y,m,o){
-  const {rows}=summarize(st,y,m), L=[];
+  const {rows,t}=summarize(st,y,m), L=[];
   L.push(MONTHS[m]+' '+y,'');
   rows.forEach(r=>{
     if(o.onlyActive&&!r.work&&!r.dogs) return;
-    L.push(pad(r.d)+'/'+pad(m+1)+' ('+DOW_SHORT[r.dow]+') – '+(r.work?'עבדתי':'לא עבדתי')+' | כלבים: '+(r.dogs?'כן':'לא'));
+    L.push(pad(r.d)+'/'+pad(m+1)+' ('+DOW_SHORT[r.dow]+') – '+(r.work?'עבדתי':'לא עבדתי')+' | כלבים: '+(r.dogs?'כן':'לא')+(r.c.otMin>0?' | שעות נוספות: '+fmtHM(r.c.otMin):''));
   });
+  if(t.otMin>0) L.push('','סה״כ שעות נוספות בחודש: '+fmtHM(t.otMin));
   return L.join('\n');
 }
 
 function buildCSV(st,y,m){
-  const {rows}=summarize(st,y,m);
+  const {rows,t}=summarize(st,y,m);
   const cell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   const safe=s=>/^[=+\-@\t\r]/.test(s)?"'"+s:s;
   const lines=[['תאריך','יום בשבוע','עבדתי','שעות','כלבים אצלי','הערות']];
   rows.forEach(r=>{
-    lines.push([pad(r.d)+'/'+pad(m+1)+'/'+y,DOW_FULL[r.dow],r.work?'כן':'לא',r.work?r2(r.c.min/60):'',r.dogs?'כן':'לא',safe(r.note)]);
+    lines.push([pad(r.d)+'/'+pad(m+1)+'/'+y,DOW_FULL[r.dow],r.work?'כן':'לא',r.work?r2(r.c.min/60):'',r.dogs?'כן':'לא',[safe(r.note),r.c.otMin>0?'שעות נוספות: '+fmtHM(r.c.otMin):''].filter(Boolean).join(' | ')]);
   });
+  if(t.otMin>0) lines.push(['סה״כ','','',r2(t.minutes/60),'','שעות נוספות בחודש: '+fmtHM(t.otMin)+' ('+r2(t.otMin/60)+' עשרוני)']);
   return '\ufeff'+lines.map(l=>l.map(cell).join(',')).join('\r\n');
 }
 //</logic>
